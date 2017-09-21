@@ -36,10 +36,10 @@
 static ERL_NIF_TERM
 brotli_encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
 {
-    unsigned int quality;
+    unsigned int quality, window_size;
     ErlNifBinary data, encoded;
 
-    if (argc != 2) {
+    if (argc != 3) {
         return (BADARG);
     }
 
@@ -51,11 +51,15 @@ brotli_encode(ErlNifEnv *env, int argc, const ERL_NIF_TERM argv[])
         return (BADARG);
     }
 
+    if (!enif_get_uint(env, argv[2], &window_size)) {
+        return (BADARG);
+    }
+
     size_t length = data.size;
     size_t output_length = BrotliEncoderMaxCompressedSize(data.size);
     uint8_t* output = malloc(output_length);
     BROTLI_BOOL ok = BrotliEncoderCompress(quality,
-        BROTLI_DEFAULT_WINDOW, BROTLI_DEFAULT_MODE,
+        window_size, BROTLI_DEFAULT_MODE,
         length, data.data,
         &output_length, output);
     if(!ok) {
@@ -80,7 +84,7 @@ brotli_load(ErlNifEnv *env, void **priv_data, ERL_NIF_TERM load_info)
 }
 
 static ErlNifFunc brotli_exports[] = {
-    {"brotli_encode", 2, brotli_encode},
+    {"brotli_encode", 3, brotli_encode},
 };
 
 ERL_NIF_INIT(brotli_nif, brotli_exports, brotli_load, NULL, NULL, NULL)
